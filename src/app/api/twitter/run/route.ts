@@ -602,6 +602,7 @@ export async function POST(request: Request) {
 
     // Step 5: Try each tweet until one succeeds (some may have reply restrictions)
     const twitterClient = new TwitterApi(accessToken);
+    let consecutive403s = 0;
 
     for (const tweet of unrepliedTweets) {
       const hasImages = tweet.imageUrls.length > 0;
@@ -676,10 +677,27 @@ export async function POST(request: Request) {
         });
         replyId = result.data.id;
       } catch (error: unknown) {
-        // Check if this is a reply restriction (403) — remember and skip
+        // Check if this is a reply restriction (403) — skip to next tweet
         const err = error as { code?: number; data?: unknown };
         if (err.code === 403) {
-          // Store this user so we skip their tweets in future runs
+          consecutive403s++;
+
+          // If 3+ tweets in a row get 403, it's likely the account is limited
+          if (consecutive403s >= 3) {
+            await createLog(
+              accountId,
+              "error",
+              "Account appears to be temporarily limited by Twitter — check the account on twitter.com for restrictions"
+            );
+            return NextResponse.json(
+              {
+                error: "Account temporarily limited by Twitter",
+              },
+              { status: 403 }
+            );
+          }
+
+          // Single 403 — likely per-user reply restriction, save and skip
           await db.restrictedTwitterUser
             .create({
               data: { accountId, username: tweet.username },
@@ -688,7 +706,7 @@ export async function POST(request: Request) {
           await createLog(
             accountId,
             "warning",
-            `@${tweet.username} has reply restrictions (saved, will skip in future), trying next...`
+            `@${tweet.username} has reply restrictions, trying next...`
           );
           continue;
         }
