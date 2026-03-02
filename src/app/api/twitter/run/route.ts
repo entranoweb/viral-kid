@@ -586,168 +586,183 @@ export async function POST(request: Request) {
       });
     }
 
-    // Step 4: Pick best tweet (most likes, least replies)
-    // Sort by hearts DESC, then by replies ASC
+    // Step 4: Sort tweets by engagement (most likes, then least replies)
     unrepliedTweets.sort((a, b) => {
       if (b.hearts !== a.hearts) return b.hearts - a.hearts;
       return a.replies - b.replies;
     });
 
-    const bestTweet = unrepliedTweets[0]!;
+    // Step 5: Try each tweet until one succeeds (some may have reply restrictions)
+    const twitterClient = new TwitterApi(accessToken);
 
-    const hasImages = bestTweet.imageUrls.length > 0;
-    await createLog(
-      accountId,
-      "info",
-      `Selected tweet by @${bestTweet.username} (${bestTweet.hearts} likes, ${bestTweet.replies} replies)${hasImages ? ` [${bestTweet.imageUrls.length} image(s)]` : ""}`
-    );
+    for (const tweet of unrepliedTweets) {
+      const hasImages = tweet.imageUrls.length > 0;
+      await createLog(
+        accountId,
+        "info",
+        `Selected tweet by @${tweet.username} (${tweet.hearts} likes, ${tweet.replies} replies)${hasImages ? ` [${tweet.imageUrls.length} image(s)]` : ""}`
+      );
 
-    // Step 5: Analyze images if present and vision model is configured
-    let imageDescription = "";
-    if (hasImages && openRouterCredentials.selectedVisionModel) {
-      try {
-        await createLog(
-          accountId,
-          "info",
-          "Analyzing image(s) with vision model..."
-        );
-        imageDescription = await analyzeImageWithVision(
-          openRouterCredentials.apiKey,
-          openRouterCredentials.selectedVisionModel,
-          bestTweet.imageUrls
-        );
-        if (imageDescription) {
+      // Analyze images if present and vision model is configured
+      let imageDescription = "";
+      if (hasImages && openRouterCredentials.selectedVisionModel) {
+        try {
           await createLog(
             accountId,
             "info",
-            `Image analysis: "${imageDescription.slice(0, 50)}..."`
+            "Analyzing image(s) with vision model..."
           );
+          imageDescription = await analyzeImageWithVision(
+            openRouterCredentials.apiKey,
+            openRouterCredentials.selectedVisionModel,
+            tweet.imageUrls
+          );
+          if (imageDescription) {
+            await createLog(
+              accountId,
+              "info",
+              `Image analysis: "${imageDescription.slice(0, 50)}..."`
+            );
+          }
+        } catch (error) {
+          console.error("Vision model error:", error);
         }
+      }
+
+      // Generate LLM reply
+      let generatedReply: string;
+      try {
+        generatedReply = await generateReplyWithLLM(
+          openRouterCredentials.apiKey,
+          openRouterCredentials.selectedModel,
+          openRouterCredentials.systemPrompt || "",
+          tweet.userTweet,
+          tweet.username,
+          {
+            noHashtags: openRouterCredentials.noHashtags,
+            noEmojis: openRouterCredentials.noEmojis,
+            noCapitalization: openRouterCredentials.noCapitalization,
+            badGrammar: openRouterCredentials.badGrammar,
+          },
+          imageDescription
+        );
       } catch (error) {
-        console.error("Vision model error:", error);
-        // Continue without image description if vision fails
+        const message =
+          error instanceof Error ? error.message : "Failed to generate reply";
+        await createLog(accountId, "error", `LLM error: ${message}`);
+        return NextResponse.json({ error: message }, { status: 500 });
       }
-    }
 
-    // Step 6: Generate LLM reply
-    let generatedReply: string;
-    try {
-      generatedReply = await generateReplyWithLLM(
-        openRouterCredentials.apiKey,
-        openRouterCredentials.selectedModel,
-        openRouterCredentials.systemPrompt || "",
-        bestTweet.userTweet,
-        bestTweet.username,
-        {
-          noHashtags: openRouterCredentials.noHashtags,
-          noEmojis: openRouterCredentials.noEmojis,
-          noCapitalization: openRouterCredentials.noCapitalization,
-          badGrammar: openRouterCredentials.badGrammar,
-        },
-        imageDescription
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to generate reply";
-      await createLog(accountId, "error", `LLM error: ${message}`);
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-
-    await createLog(
-      accountId,
-      "info",
-      `Generated reply: "${generatedReply.slice(0, 50)}..."`
-    );
-
-    // Step 6: Post reply via Twitter API
-    const twitterClient = new TwitterApi(accessToken);
-
-    let replyId: string;
-    try {
-      const result = await twitterClient.v2.tweet({
-        text: generatedReply,
-        reply: { in_reply_to_tweet_id: bestTweet.tweetId },
-      });
-      replyId = result.data.id;
-    } catch (error: unknown) {
-      // Extract full error detail from twitter-api-v2 ApiResponseError
-      let message = "Failed to post reply";
-      if (error && typeof error === "object") {
-        const err = error as {
-          code?: number;
-          data?: unknown;
-          message?: string;
-        };
-        const detail = err.data
-          ? JSON.stringify(err.data).slice(0, 300)
-          : err.message || "";
-        message = `code=${err.code || "?"} ${detail}`;
-      }
-      await createLog(accountId, "error", `Twitter API error: ${message}`);
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-
-    await createLog(
-      accountId,
-      "success",
-      `Posted reply to @${bestTweet.username}`
-    );
-
-    // Step 7: Store the interaction
-    try {
-      await db.tweetInteraction.upsert({
-        where: {
-          accountId_tweetId: { accountId, tweetId: bestTweet.tweetId },
-        },
-        update: {
-          userTweet: bestTweet.userTweet,
-          username: bestTweet.username,
-          views: bestTweet.views,
-          hearts: bestTweet.hearts,
-          replies: bestTweet.replies,
-          ourReply: generatedReply,
-          ourReplyId: replyId,
-          repliedAt: new Date(),
-        },
-        create: {
-          accountId,
-          tweetId: bestTweet.tweetId,
-          userTweet: bestTweet.userTweet,
-          username: bestTweet.username,
-          views: bestTweet.views,
-          hearts: bestTweet.hearts,
-          replies: bestTweet.replies,
-          ourReply: generatedReply,
-          ourReplyId: replyId,
-          repliedAt: new Date(),
-        },
-      });
-
-      // Clean up old interactions (older than 24 hours without reply)
-      await db.tweetInteraction.deleteMany({
-        where: {
-          accountId,
-          ourReply: null,
-          createdAt: { lt: twentyFourHoursAgo },
-        },
-      });
-    } catch (dbError) {
-      console.error("Failed to store interaction:", dbError);
-      // Reply was posted successfully, just log the DB error
       await createLog(
         accountId,
-        "warning",
-        "Reply posted but failed to record in database"
+        "info",
+        `Generated reply: "${generatedReply.slice(0, 50)}..."`
       );
+
+      // Post reply via Twitter API
+      let replyId: string;
+      try {
+        const result = await twitterClient.v2.tweet({
+          text: generatedReply,
+          reply: { in_reply_to_tweet_id: tweet.tweetId },
+        });
+        replyId = result.data.id;
+      } catch (error: unknown) {
+        // Check if this is a reply restriction (403) — skip to next tweet
+        const err = error as { code?: number; data?: unknown };
+        if (err.code === 403) {
+          await createLog(
+            accountId,
+            "warning",
+            `@${tweet.username} has reply restrictions, trying next tweet...`
+          );
+          continue;
+        }
+        // Non-403 errors are real failures
+        let message = "Failed to post reply";
+        if (error && typeof error === "object") {
+          const detail = err.data
+            ? JSON.stringify(err.data).slice(0, 300)
+            : (error as Error).message || "";
+          message = `code=${err.code || "?"} ${detail}`;
+        }
+        await createLog(accountId, "error", `Twitter API error: ${message}`);
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
+
+      await createLog(
+        accountId,
+        "success",
+        `Posted reply to @${tweet.username}`
+      );
+
+      // Store the interaction
+      try {
+        await db.tweetInteraction.upsert({
+          where: {
+            accountId_tweetId: { accountId, tweetId: tweet.tweetId },
+          },
+          update: {
+            userTweet: tweet.userTweet,
+            username: tweet.username,
+            views: tweet.views,
+            hearts: tweet.hearts,
+            replies: tweet.replies,
+            ourReply: generatedReply,
+            ourReplyId: replyId,
+            repliedAt: new Date(),
+          },
+          create: {
+            accountId,
+            tweetId: tweet.tweetId,
+            userTweet: tweet.userTweet,
+            username: tweet.username,
+            views: tweet.views,
+            hearts: tweet.hearts,
+            replies: tweet.replies,
+            ourReply: generatedReply,
+            ourReplyId: replyId,
+            repliedAt: new Date(),
+          },
+        });
+
+        // Clean up old interactions (older than 24 hours without reply)
+        await db.tweetInteraction.deleteMany({
+          where: {
+            accountId,
+            ourReply: null,
+            createdAt: { lt: twentyFourHoursAgo },
+          },
+        });
+      } catch (dbError) {
+        console.error("Failed to store interaction:", dbError);
+        await createLog(
+          accountId,
+          "warning",
+          "Reply posted but failed to record in database"
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        replied: true,
+        repliedTo: tweet.username,
+        tweetId: tweet.tweetId,
+        replyId,
+        reply: generatedReply,
+      });
     }
 
+    // All tweets had reply restrictions
+    await createLog(
+      accountId,
+      "warning",
+      "All tweets had reply restrictions, could not post"
+    );
     return NextResponse.json({
       success: true,
-      replied: true,
-      repliedTo: bestTweet.username,
-      tweetId: bestTweet.tweetId,
-      replyId,
-      reply: generatedReply,
+      replied: false,
+      message: "All tweets had reply restrictions",
     });
   } catch (error) {
     console.error("Twitter pipeline error:", error);
