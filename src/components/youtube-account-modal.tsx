@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import toast from "react-hot-toast";
 import {
   X,
@@ -77,6 +78,7 @@ export function YouTubeAccountModal({
   onClose,
   accountId,
 }: YouTubeAccountModalProps) {
+  useEscapeClose(isOpen, onClose);
   const [credentials, setCredentials] = useState<YouTubeCredentialsState>({
     apiKey: "",
     clientId: "",

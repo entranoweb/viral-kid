@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import toast from "react-hot-toast";
 import {
   X,
@@ -73,6 +74,7 @@ export function AccountModal({
   platform,
   accountId,
 }: AccountModalProps) {
+  useEscapeClose(isOpen, onClose);
   const [credentials, setCredentials] = useState<TwitterCredentialsState>({
     clientId: "",
     clientSecret: "",

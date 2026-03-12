@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import {
   X,
   Loader2,
@@ -59,6 +60,7 @@ export function LogsModal({
   accountId,
   platform,
 }: LogsModalProps) {
+  useEscapeClose(isOpen, onClose);
   // Data states
   const [logs, setLogs] = useState<Log[]>([]);
   const [isLoading, setIsLoading] = useState(false);

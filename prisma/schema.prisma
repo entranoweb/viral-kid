@@ -100,6 +100,7 @@ model Account {
   redditInteractions    RedditInteraction[]
   instagramAutomations  InstagramAutomation[]
   instagramInteractions InstagramInteraction[]
+  recreatedTweets       RecreatedTweet[]
 
   @@index([platform])
   @@index([order])
@@ -115,6 +116,9 @@ model TwitterConfiguration {
   removeReplies        Boolean  @default(true) // Exclude reply tweets from search
   removePostsWithLinks Boolean  @default(false) // Exclude tweets containing links (also removes media tweets)
   removePostsWithMedia Boolean  @default(false) // Exclude tweets with images/videos
+  recreateEnabled      Boolean  @default(false) // Whether the recreate pipeline is active
+  recreateSchedule     String   @default("every_hour") // Schedule for recreate pipeline
+  recreateSystemPrompt String?  // Optional custom system prompt for rewriting tweets
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -461,4 +465,28 @@ model InstagramInteraction {
   @@index([accountId])
   @@index([automationId])
   @@index([createdAt])
+}
+
+// Recreated tweets - tracks tweets that have been recreated/reposted by the automation
+model RecreatedTweet {
+  id                String    @id @default(cuid())
+  originalTweetId   String    // Source tweet ID from Twitter
+  originalText      String    // Original tweet content
+  originalUsername  String    // Who wrote the original
+  originalImageUrls String    @default("[]") // JSON array of original image URLs
+  recreatedText     String    // LLM-rewritten tweet text
+  recreatedTweetId  String?   // Our posted tweet's ID (null if not yet posted)
+  mediaIds          String    @default("[]") // JSON array of uploaded Twitter media IDs
+  postedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relation to Account
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, originalTweetId])
+  @@index([accountId])
+  @@index([createdAt])
+  @@index([accountId, createdAt])
 }

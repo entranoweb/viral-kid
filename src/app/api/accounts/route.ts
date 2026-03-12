@@ -56,6 +56,7 @@ interface AccountWithCredentials {
   } | null;
   twitterConfig: {
     enabled: boolean;
+    recreateEnabled: boolean;
     searchTerm: string | null;
   } | null;
   youtubeCredentials: {
@@ -116,6 +117,7 @@ export async function GET() {
         twitterConfig: {
           select: {
             enabled: true,
+            recreateEnabled: true,
             searchTerm: true,
           },
         },
@@ -181,7 +183,7 @@ export async function GET() {
             : null;
           hasApiKey = !!account.twitterCredentials?.rapidApiKey;
           hasSearchTerm = !!account.twitterConfig?.searchTerm?.trim();
-          isAutomationEnabled = account.twitterConfig?.enabled ?? false;
+          isAutomationEnabled = account.twitterConfig?.recreateEnabled ?? false;
           tokenHealth = getTokenStatus(
             account.twitterCredentials?.accessToken ?? null,
             account.twitterCredentials?.tokenExpiresAt ?? null,

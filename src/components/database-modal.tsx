@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import {
   X,
   Loader2,
@@ -205,6 +206,7 @@ export function DatabaseModal({
   accountId,
   platform,
 }: DatabaseModalProps) {
+  useEscapeClose(isOpen, onClose);
   // Data states
   const [tweets, setTweets] = useState<TweetInteraction[]>([]);
   const [redditInteractions, setRedditInteractions] = useState<

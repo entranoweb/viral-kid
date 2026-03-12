@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import {
   X,
   Loader2,
@@ -261,6 +262,7 @@ export function SystemPromptModal({
   accountId,
   platform,
 }: SystemPromptModalProps) {
+  useEscapeClose(isOpen, onClose);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertTriangle } from "lucide-react";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import { ModalButton } from "@/components/ui/modal-button";
 import { IconButton } from "@/components/ui/icon-button";
 
@@ -26,6 +27,7 @@ export function ConfirmModal({
   cancelLabel = "Cancel",
   variant = "danger",
 }: ConfirmModalProps) {
+  useEscapeClose(isOpen, onClose);
   const handleConfirm = () => {
     onConfirm();
     onClose();

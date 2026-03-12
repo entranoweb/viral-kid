@@ -46,6 +46,9 @@ export async function GET(request: Request) {
       removeReplies: config.removeReplies,
       removePostsWithLinks: config.removePostsWithLinks,
       removePostsWithMedia: config.removePostsWithMedia,
+      recreateEnabled: config.recreateEnabled,
+      recreateSchedule: config.recreateSchedule,
+      recreateSystemPrompt: config.recreateSystemPrompt,
     });
   } catch (error) {
     console.error("Failed to fetch Twitter configuration:", error);
@@ -89,6 +92,9 @@ export async function POST(request: Request) {
       removeReplies,
       removePostsWithLinks,
       removePostsWithMedia,
+      recreateEnabled,
+      recreateSchedule,
+      recreateSystemPrompt,
     } = body;
 
     // Validate schedule value
@@ -104,6 +110,13 @@ export async function POST(request: Request) {
     if (schedule && !validSchedules.includes(schedule)) {
       return NextResponse.json(
         { error: "Invalid schedule value" },
+        { status: 400 }
+      );
+    }
+
+    if (recreateSchedule && !validSchedules.includes(recreateSchedule)) {
+      return NextResponse.json(
+        { error: "Invalid recreateSchedule value" },
         { status: 400 }
       );
     }
@@ -132,6 +145,9 @@ export async function POST(request: Request) {
         ...(typeof removePostsWithMedia === "boolean" && {
           removePostsWithMedia,
         }),
+        ...(typeof recreateEnabled === "boolean" && { recreateEnabled }),
+        ...(recreateSchedule && { recreateSchedule }),
+        ...(recreateSystemPrompt !== undefined && { recreateSystemPrompt }),
       },
     });
 
@@ -143,6 +159,9 @@ export async function POST(request: Request) {
       removeReplies: config.removeReplies,
       removePostsWithLinks: config.removePostsWithLinks,
       removePostsWithMedia: config.removePostsWithMedia,
+      recreateEnabled: config.recreateEnabled,
+      recreateSchedule: config.recreateSchedule,
+      recreateSystemPrompt: config.recreateSystemPrompt,
     });
   } catch (error) {
     console.error("Failed to save Twitter configuration:", error);

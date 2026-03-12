@@ -99,6 +99,86 @@ export async function GET(request: Request): Promise<NextResponse> {
       results.push(...batchResults);
     }
 
+    // --- Recreate pipeline ---
+    const recreateConfigs = await db.twitterConfiguration.findMany({
+      where: { recreateEnabled: true },
+      include: {
+        account: {
+          include: {
+            twitterCredentials: true,
+          },
+        },
+      },
+    });
+
+    console.log(
+      `Found ${recreateConfigs.length} recreate-enabled Twitter accounts`
+    );
+
+    const recreateAccountsToProcess = recreateConfigs.filter((config) => {
+      const credentials = config.account.twitterCredentials;
+      if (!credentials?.accessToken || !credentials?.rapidApiKey) {
+        results.push({
+          accountId: config.accountId,
+          success: false,
+          message: "[recreate] Missing Twitter credentials",
+        });
+        return false;
+      }
+
+      if (!checkSchedule(config.recreateSchedule)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    const processRecreateAccount = async (
+      config: (typeof recreateAccountsToProcess)[0]
+    ) => {
+      const accountId = config.accountId;
+      try {
+        const response = await fetch(`${baseUrl}/api/twitter/recreate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Cron-Secret": process.env.CRON_SECRET || "",
+          },
+          body: JSON.stringify({ accountId }),
+        });
+
+        const data = await response.json();
+
+        return {
+          accountId,
+          success: response.ok,
+          message: response.ok
+            ? `[recreate] ${data.message || "Completed"}`
+            : `[recreate] ${data.error || "Unknown error"}`,
+        };
+      } catch (error) {
+        console.error(
+          `Error processing recreate for account ${accountId}:`,
+          error
+        );
+        return {
+          accountId,
+          success: false,
+          message: `[recreate] ${error instanceof Error ? error.message : "Unknown error"}`,
+        };
+      }
+    };
+
+    for (
+      let i = 0;
+      i < recreateAccountsToProcess.length;
+      i += CONCURRENCY_LIMIT
+    ) {
+      const batch = recreateAccountsToProcess.slice(i, i + CONCURRENCY_LIMIT);
+      const batchResults = await Promise.all(batch.map(processRecreateAccount));
+      results.push(...batchResults);
+    }
+
     return NextResponse.json({
       success: true,
       message: "Twitter automation cron completed",

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import { dropdownVariants } from "@/lib/animations";
 import { ModalButton } from "@/components/ui/modal-button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -38,6 +39,7 @@ export function SettingsModal({
   platform,
   accountId,
 }: SettingsModalProps) {
+  useEscapeClose(isOpen, onClose);
   const [searchTerm, setSearchTerm] = useState("");
   const [schedule, setSchedule] = useState("every_hour");
   const [minimumLikesCount, setMinimumLikesCount] = useState(20);
@@ -147,8 +149,12 @@ export function SettingsModal({
           if (data.minimumUpvotes !== undefined) {
             setMinimumUpvotes(data.minimumUpvotes);
           }
+          // Twitter recreate-specific
+          if (data.recreateSchedule) {
+            setSchedule(data.recreateSchedule);
+          }
           // Common
-          if (data.schedule) {
+          if (platform !== "twitter" && data.schedule) {
             setSchedule(data.schedule);
           }
         })
@@ -175,7 +181,7 @@ export function SettingsModal({
       if (platform === "twitter") {
         body = JSON.stringify({
           searchTerm,
-          schedule,
+          recreateSchedule: schedule,
           minimumLikesCount,
           removeReplies,
           removePostsWithLinks,

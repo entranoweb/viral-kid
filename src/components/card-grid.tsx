@@ -1369,7 +1369,7 @@ export function CardGrid() {
       // Determine the API endpoint based on platform
       const endpoint =
         account.platform === "twitter"
-          ? "/api/twitter/run"
+          ? "/api/twitter/recreate"
           : account.platform === "youtube"
             ? "/api/youtube/run"
             : account.platform === "instagram"
@@ -1388,15 +1388,15 @@ export function CardGrid() {
         throw new Error(data.error || "Pipeline failed");
       }
 
-      if (data.replied) {
+      if (data.recreated) {
+        toast.success(`Recreated tweet from @${data.originalBy}`);
+      } else if (data.replied) {
         const platformMessage =
-          account.platform === "twitter"
-            ? `Replied to tweet by @${data.repliedTo}`
-            : account.platform === "youtube"
-              ? `Replied to comment by ${data.repliedTo}`
-              : account.platform === "instagram"
-                ? `Replied to ${data.repliedTo}`
-                : `Replied to u/${data.repliedTo}`;
+          account.platform === "youtube"
+            ? `Replied to comment by ${data.repliedTo}`
+            : account.platform === "instagram"
+              ? `Replied to ${data.repliedTo}`
+              : `Replied to u/${data.repliedTo}`;
         toast.success(platformMessage);
       } else if (data.message) {
         toast(data.message, { icon: "ℹ️" });
@@ -1424,7 +1424,7 @@ export function CardGrid() {
     try {
       const endpoint =
         account.platform === "twitter"
-          ? "/api/twitter/toggle"
+          ? "/api/twitter/recreate-toggle"
           : account.platform === "youtube"
             ? "/api/youtube/toggle"
             : account.platform === "instagram"

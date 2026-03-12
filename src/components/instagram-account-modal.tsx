@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import toast from "react-hot-toast";
 import { X, Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import {
@@ -37,6 +38,7 @@ export function InstagramAccountModal({
   onClose,
   accountId,
 }: InstagramAccountModalProps) {
+  useEscapeClose(isOpen, onClose);
   const [credentials, setCredentials] = useState<InstagramCredentialsState>({
     appId: "",
     appSecret: "",

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscapeClose } from "@/lib/hooks/use-escape-close";
 import toast from "react-hot-toast";
 import {
   X,
@@ -44,6 +45,7 @@ export function InstagramAutomationsModal({
   onClose,
   accountId,
 }: InstagramAutomationsModalProps) {
+  useEscapeClose(isOpen, onClose);
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
