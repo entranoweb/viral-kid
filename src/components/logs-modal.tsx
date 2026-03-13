@@ -66,26 +66,33 @@ export function LogsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
-  const fetchLogs = useCallback(async () => {
-    if (!accountId) return;
+  const fetchLogs = useCallback(
+    async (showSpinner = true) => {
+      if (!accountId) return;
 
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/logs?accountId=${accountId}`);
-      if (!res.ok) throw new Error("Failed to fetch logs");
-      const data = await res.json();
-      setLogs(data);
-    } catch (error) {
-      console.error("Failed to fetch logs:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [accountId]);
+      if (showSpinner) setIsLoading(true);
+      try {
+        const res = await fetch(`/api/logs?accountId=${accountId}`);
+        if (!res.ok) throw new Error("Failed to fetch logs");
+        const data = await res.json();
+        setLogs(data);
+      } catch (error) {
+        console.error("Failed to fetch logs:", error);
+      } finally {
+        if (showSpinner) setIsLoading(false);
+      }
+    },
+    [accountId]
+  );
 
   useEffect(() => {
-    if (isOpen && accountId) {
-      fetchLogs();
-    }
+    if (!isOpen || !accountId) return;
+
+    fetchLogs();
+
+    // Poll for new logs every 3 seconds while modal is open
+    const interval = setInterval(() => fetchLogs(false), 3000);
+    return () => clearInterval(interval);
   }, [isOpen, accountId, fetchLogs]);
 
   const handleClearLogs = async () => {
