@@ -299,12 +299,17 @@ async function generateRecreatedText(
   return reply.slice(0, 280);
 }
 
-async function downloadImage(url: string): Promise<Buffer | null> {
+async function downloadImage(
+  url: string
+): Promise<{ buffer: Buffer; mimeType: string } | null> {
   try {
     const response = await fetch(url);
     if (!response.ok) return null;
     const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    const mimeType =
+      response.headers.get("content-type")?.split(";")[0]?.trim() ||
+      "image/jpeg";
+    return { buffer: Buffer.from(arrayBuffer), mimeType };
   } catch {
     return null;
   }
@@ -570,7 +575,7 @@ export async function POST(request: Request) {
         `Recreated text: "${recreatedText.slice(0, 50)}..."`
       );
 
-      // Step 5b: Handle images — download and upload to Twitter
+      // Step 5b: Handle images — download and upload to Twitter in parallel
       const uploadedMediaIds: string[] = [];
       if (hasImages) {
         if (!uploadClient) {
@@ -580,31 +585,42 @@ export async function POST(request: Request) {
             "OAuth 1.0a credentials not configured — skipping image upload"
           );
         } else {
-          for (const imageUrl of tweet.imageUrls.slice(0, 4)) {
-            try {
-              const imageBuffer = await downloadImage(imageUrl);
-              if (!imageBuffer) {
+          const uploadResults = await Promise.all(
+            tweet.imageUrls.slice(0, 4).map(async (imageUrl) => {
+              try {
+                const downloaded = await downloadImage(imageUrl);
+                if (!downloaded) {
+                  await createLog(
+                    accountId,
+                    "warning",
+                    `Failed to download image: ${imageUrl}`
+                  );
+                  return null;
+                }
+
+                const mediaId = await uploadClient.v1.uploadMedia(
+                  downloaded.buffer,
+                  {
+                    mimeType: downloaded.mimeType,
+                    target: "tweet",
+                  }
+                );
+                return mediaId;
+              } catch (error) {
+                const message =
+                  error instanceof Error ? error.message : "Unknown error";
                 await createLog(
                   accountId,
                   "warning",
-                  `Failed to download image: ${imageUrl}`
+                  `Failed to upload image to Twitter: ${message}`
                 );
-                continue;
+                return null;
               }
+            })
+          );
 
-              const mediaId = await uploadClient.v1.uploadMedia(imageBuffer, {
-                mimeType: "image/jpeg",
-              });
-              uploadedMediaIds.push(mediaId);
-            } catch (error) {
-              const message =
-                error instanceof Error ? error.message : "Unknown error";
-              await createLog(
-                accountId,
-                "warning",
-                `Failed to upload image to Twitter: ${message}`
-              );
-            }
+          for (const mediaId of uploadResults) {
+            if (mediaId) uploadedMediaIds.push(mediaId);
           }
 
           if (uploadedMediaIds.length > 0) {
