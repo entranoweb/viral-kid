@@ -163,7 +163,10 @@ async function fetchTweetsFromRapidAPI(
     }
 
     try {
-      const media = result.legacy.extended_entities?.media || [];
+      const media =
+        result.legacy.extended_entities?.media ||
+        result.legacy.entities?.media ||
+        [];
       const hasVideo = media.some(
         (m: { type: string }) => m.type === "video" || m.type === "animated_gif"
       );

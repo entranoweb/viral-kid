@@ -759,6 +759,92 @@ describe("Twitter Recreate API", () => {
     expect(mockUploadMedia).not.toHaveBeenCalled();
   });
 
+  // --- entities.media fallback ---
+
+  it("picks up images from entities.media when extended_entities is missing", async () => {
+    mockAuth.mockResolvedValueOnce({
+      user: { id: "user-1" },
+      expires: "",
+    });
+    mockAccountFindFirst.mockResolvedValueOnce(fullAccount);
+    mockRecreatedTweetFindMany.mockResolvedValueOnce([]);
+    mockRecreatedTweetCreate.mockResolvedValueOnce({});
+    mockTweet.mockResolvedValueOnce({ data: { id: "posted-fallback" } });
+    mockUploadMedia.mockResolvedValueOnce("media-fallback-1");
+
+    // Custom RapidAPI response with entities.media but no extended_entities
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        entries: [
+          {
+            entries: [
+              {
+                entryId: "tweet-fb1",
+                content: {
+                  itemContent: {
+                    tweet_results: {
+                      result: {
+                        __typename: "Tweet",
+                        rest_id: "fb1",
+                        legacy: {
+                          full_text: "Single image tweet",
+                          favorite_count: 200,
+                          reply_count: 0,
+                          entities: {
+                            media: [
+                              {
+                                type: "photo",
+                                media_url_https:
+                                  "https://pbs.twimg.com/media/fallback.jpg",
+                              },
+                            ],
+                          },
+                        },
+                        core: {
+                          user_results: {
+                            result: {
+                              legacy: { screen_name: "singleimg" },
+                            },
+                          },
+                        },
+                        views: { count: "20000" },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    // OpenRouter
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => makeOpenRouterResponse("fallback image tweet"),
+    });
+
+    // Image download
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      arrayBuffer: async () => new ArrayBuffer(50),
+      headers: new Headers({ "content-type": "image/jpeg" }),
+    });
+
+    const response = await POST(createPostRequest({ accountId: "acc-1" }));
+    const data = await response.json();
+
+    expect(data.recreated).toBe(true);
+    expect(data.mediaCount).toBe(1);
+    expect(data.originalBy).toBe("singleimg");
+    expect(mockUploadMedia).toHaveBeenCalledWith(expect.any(Buffer), {
+      mimeType: "image/jpeg",
+      target: "tweet",
+    });
+  });
+
   // --- Video tweets are skipped ---
 
   it("skips video tweets during RapidAPI parsing", async () => {
