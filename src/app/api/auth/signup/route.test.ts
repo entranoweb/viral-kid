@@ -190,14 +190,28 @@ describe("Signup API", () => {
         invitedById: "admin-1",
       } as never);
 
-      vi.mocked(db.user.findUnique).mockResolvedValue({
-        id: "existing-user",
-        email: "test@example.com",
-        passwordHash: "hashed",
-        role: "USER",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as never);
+      // The route uses db.$transaction(async (tx) => { tx.user.findUnique(...) })
+      // so we need the transaction mock to execute the callback with a tx
+      // that returns an existing user
+      vi.mocked(db.$transaction).mockImplementation(async (cb) => {
+        const tx = {
+          user: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: "existing-user",
+              email: "test@example.com",
+              passwordHash: "hashed",
+              role: "USER",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }),
+            create: vi.fn(),
+          },
+          account: { create: vi.fn() },
+          invite: { update: vi.fn() },
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (cb as (tx: any) => Promise<unknown>)(tx);
+      });
 
       const request = new Request("http://localhost/api/auth/signup", {
         method: "POST",

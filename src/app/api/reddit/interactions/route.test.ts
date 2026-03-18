@@ -18,14 +18,18 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
+  getEffectiveUserId: vi.fn(),
 }));
 
 // Import after mocking
 import { db } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { auth, getEffectiveUserId } from "@/lib/auth";
 
 // Type-safe mock helpers
 const mockAuth = auth as unknown as ReturnType<typeof vi.fn>;
+const mockGetEffectiveUserId = getEffectiveUserId as unknown as ReturnType<
+  typeof vi.fn
+>;
 const mockAccountFindFirst = db.account.findFirst as unknown as ReturnType<
   typeof vi.fn
 >;
@@ -45,6 +49,7 @@ function createRequest(url: string, method = "GET"): Request {
 describe("Reddit Interactions API", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetEffectiveUserId.mockReturnValue("user1");
   });
 
   describe("GET /api/reddit/interactions", () => {
