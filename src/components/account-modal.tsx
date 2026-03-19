@@ -781,6 +781,8 @@ export function AccountModal({
                                     <div
                                       className="max-h-48 overflow-y-auto"
                                       data-lenis-prevent
+                                      onWheel={(e) => e.stopPropagation()}
+                                      style={{ overscrollBehavior: "contain" }}
                                     >
                                       {openRouterModels
                                         .filter(
@@ -1021,6 +1023,8 @@ export function AccountModal({
                                     <div
                                       className="max-h-48 overflow-y-auto"
                                       data-lenis-prevent
+                                      onWheel={(e) => e.stopPropagation()}
+                                      style={{ overscrollBehavior: "contain" }}
                                     >
                                       {visionModels
                                         .filter(

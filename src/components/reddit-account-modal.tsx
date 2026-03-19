@@ -757,6 +757,8 @@ export function RedditAccountModal({
                                     <div
                                       className="max-h-48 overflow-y-auto"
                                       data-lenis-prevent
+                                      onWheel={(e) => e.stopPropagation()}
+                                      style={{ overscrollBehavior: "contain" }}
                                     >
                                       {openRouterModels
                                         .filter(

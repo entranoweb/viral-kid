@@ -642,6 +642,8 @@ You are a helpful social media assistant. Your role is to engage with users in a
                                 <div
                                   className="max-h-48 overflow-y-auto"
                                   data-lenis-prevent
+                                  onWheel={(e) => e.stopPropagation()}
+                                  style={{ overscrollBehavior: "contain" }}
                                 >
                                   {SAMPLE_CONTENT_OPTIONS.map(
                                     (option, index) => (

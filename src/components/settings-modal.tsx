@@ -532,36 +532,44 @@ export function SettingsModal({
                                     "0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
                                 }}
                               >
-                                {TIME_RANGE_OPTIONS.map((option, index) => (
-                                  <motion.button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => {
-                                      setTimeRange(option.value);
-                                      setIsTimeRangeDropdownOpen(false);
-                                    }}
-                                    className="w-full px-4 py-3 text-left"
-                                    style={{
-                                      color:
-                                        timeRange === option.value
-                                          ? "rgba(255,255,255,1)"
-                                          : "rgba(255,255,255,0.5)",
-                                      backgroundColor:
-                                        timeRange === option.value
-                                          ? "rgba(255,255,255,0.1)"
-                                          : "rgba(0,0,0,0)",
-                                    }}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.02 }}
-                                    whileHover={{
-                                      backgroundColor: "rgba(255,255,255,0.08)",
-                                      color: "rgba(255,255,255,1)",
-                                    }}
-                                  >
-                                    {option.label}
-                                  </motion.button>
-                                ))}
+                                <div
+                                  className="max-h-48 overflow-y-auto"
+                                  data-lenis-prevent
+                                  onWheel={(e) => e.stopPropagation()}
+                                  style={{ overscrollBehavior: "contain" }}
+                                >
+                                  {TIME_RANGE_OPTIONS.map((option, index) => (
+                                    <motion.button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() => {
+                                        setTimeRange(option.value);
+                                        setIsTimeRangeDropdownOpen(false);
+                                      }}
+                                      className="w-full px-4 py-3 text-left"
+                                      style={{
+                                        color:
+                                          timeRange === option.value
+                                            ? "rgba(255,255,255,1)"
+                                            : "rgba(255,255,255,0.5)",
+                                        backgroundColor:
+                                          timeRange === option.value
+                                            ? "rgba(255,255,255,0.1)"
+                                            : "rgba(0,0,0,0)",
+                                      }}
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: index * 0.02 }}
+                                      whileHover={{
+                                        backgroundColor:
+                                          "rgba(255,255,255,0.08)",
+                                        color: "rgba(255,255,255,1)",
+                                      }}
+                                    >
+                                      {option.label}
+                                    </motion.button>
+                                  ))}
+                                </div>
                               </motion.div>
                             )}
                           </AnimatePresence>,
@@ -680,36 +688,44 @@ export function SettingsModal({
                                     "0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
                                 }}
                               >
-                                {SCHEDULE_OPTIONS.map((option, index) => (
-                                  <motion.button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => {
-                                      setSchedule(option.value);
-                                      setIsDropdownOpen(false);
-                                    }}
-                                    className="w-full px-4 py-3 text-left"
-                                    style={{
-                                      color:
-                                        schedule === option.value
-                                          ? "rgba(255,255,255,1)"
-                                          : "rgba(255,255,255,0.5)",
-                                      backgroundColor:
-                                        schedule === option.value
-                                          ? "rgba(255,255,255,0.1)"
-                                          : "rgba(0,0,0,0)",
-                                    }}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.02 }}
-                                    whileHover={{
-                                      backgroundColor: "rgba(255,255,255,0.08)",
-                                      color: "rgba(255,255,255,1)",
-                                    }}
-                                  >
-                                    {option.label}
-                                  </motion.button>
-                                ))}
+                                <div
+                                  className="max-h-48 overflow-y-auto"
+                                  data-lenis-prevent
+                                  onWheel={(e) => e.stopPropagation()}
+                                  style={{ overscrollBehavior: "contain" }}
+                                >
+                                  {SCHEDULE_OPTIONS.map((option, index) => (
+                                    <motion.button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() => {
+                                        setSchedule(option.value);
+                                        setIsDropdownOpen(false);
+                                      }}
+                                      className="w-full px-4 py-3 text-left"
+                                      style={{
+                                        color:
+                                          schedule === option.value
+                                            ? "rgba(255,255,255,1)"
+                                            : "rgba(255,255,255,0.5)",
+                                        backgroundColor:
+                                          schedule === option.value
+                                            ? "rgba(255,255,255,0.1)"
+                                            : "rgba(0,0,0,0)",
+                                      }}
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: index * 0.02 }}
+                                      whileHover={{
+                                        backgroundColor:
+                                          "rgba(255,255,255,0.08)",
+                                        color: "rgba(255,255,255,1)",
+                                      }}
+                                    >
+                                      {option.label}
+                                    </motion.button>
+                                  ))}
+                                </div>
                               </motion.div>
                             )}
                           </AnimatePresence>,

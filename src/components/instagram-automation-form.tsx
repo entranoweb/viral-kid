@@ -424,6 +424,8 @@ export function InstagramAutomationForm({
                                   <div
                                     className="max-h-48 overflow-y-auto"
                                     data-lenis-prevent
+                                    onWheel={(e) => e.stopPropagation()}
+                                    style={{ overscrollBehavior: "contain" }}
                                   >
                                     {filteredPosts.length === 0 ? (
                                       <p className="px-3 py-4 text-center text-xs text-white/40">

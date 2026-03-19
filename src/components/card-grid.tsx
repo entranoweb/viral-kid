@@ -971,29 +971,36 @@ function MobilePlatformCard({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15 }}
+                    data-lenis-prevent
+                    onWheel={(e) => e.stopPropagation()}
                   >
-                    {menuItems.map((item) => (
-                      <button
-                        key={item.label}
-                        onClick={() => {
-                          if (!item.disabled) {
-                            item.onClick();
-                            setIsMenuOpen(false);
-                          }
-                        }}
-                        disabled={item.disabled}
-                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${
-                          item.disabled
-                            ? "cursor-not-allowed text-white/25"
-                            : item.danger
-                              ? "text-red-400 hover:bg-red-500/10"
-                              : "text-white/70 hover:bg-white/5"
-                        }`}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </button>
-                    ))}
+                    <div
+                      className="max-h-48 overflow-y-auto"
+                      style={{ overscrollBehavior: "contain" }}
+                    >
+                      {menuItems.map((item) => (
+                        <button
+                          key={item.label}
+                          onClick={() => {
+                            if (!item.disabled) {
+                              item.onClick();
+                              setIsMenuOpen(false);
+                            }
+                          }}
+                          disabled={item.disabled}
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors ${
+                            item.disabled
+                              ? "cursor-not-allowed text-white/25"
+                              : item.danger
+                                ? "text-red-400 hover:bg-red-500/10"
+                                : "text-white/70 hover:bg-white/5"
+                          }`}
+                        >
+                          {item.icon}
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
                   </motion.div>
                 </>
               )}
