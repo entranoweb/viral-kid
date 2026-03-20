@@ -215,7 +215,6 @@ export async function generateReply(
         ],
         max_tokens: 8000,
         temperature: 0.8,
-        include_reasoning: true,
       }),
     }
   );
