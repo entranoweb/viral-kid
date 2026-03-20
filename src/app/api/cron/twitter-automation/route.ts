@@ -67,6 +67,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     const processAccount = async (config: (typeof accountsToProcess)[0]) => {
       const accountId = config.accountId;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 55000);
         const response = await fetch(`${baseUrl}/api/twitter/run`, {
           method: "POST",
           headers: {
@@ -74,7 +76,9 @@ export async function GET(request: Request): Promise<NextResponse> {
             "X-Cron-Secret": process.env.CRON_SECRET || "",
           },
           body: JSON.stringify({ accountId }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         const data = await response.json();
 
@@ -148,6 +152,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     ) => {
       const accountId = config.accountId;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 55000);
         const response = await fetch(`${baseUrl}/api/twitter/recreate`, {
           method: "POST",
           headers: {
@@ -155,7 +161,9 @@ export async function GET(request: Request): Promise<NextResponse> {
             "X-Cron-Secret": process.env.CRON_SECRET || "",
           },
           body: JSON.stringify({ accountId }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         const data = await response.json();
 
