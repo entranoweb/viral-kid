@@ -4,7 +4,7 @@ import { getBaseUrl } from "@/lib/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function GET(request: Request): Promise<NextResponse> {
   // Verify the request is from Vercel Cron
@@ -68,7 +68,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       const accountId = config.accountId;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 55000);
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
         const response = await fetch(`${baseUrl}/api/twitter/run`, {
           method: "POST",
           headers: {
@@ -153,7 +153,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       const accountId = config.accountId;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 55000);
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
         const response = await fetch(`${baseUrl}/api/twitter/recreate`, {
           method: "POST",
           headers: {
